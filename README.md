@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -344,27 +345,7 @@
     <button id="todo-add-btn">追加</button>
     <ul class="todo-list" id="todo-list"></ul>
   </div>
-  <!-- Mood Section -->
-  <div class="section" id="section-mood">
-    <h2>今日の気分</h2>
-    <label for="mood-select">気分を選んでください</label>
-    <select id="mood-select">
-      <option value="5">😍 嬉しい</option>
-      <option value="4">😊 いい感じ</option>
-      <option value="3">😐 普通</option>
-      <option value="2">😞 ちょっと落ち込み</option>
-      <option value="1">😡 怒り</option>
-    </select>
-    <div style="margin:15px 0;">
-      <span class="mood-emoji" id="mood-emoji">😍</span>
-    </div>
-    <button id="mood-save-btn">保存</button>
-    <div id="mood-history" style="margin-top:20px;"></div>
-    <div class="mood-graph-section">
-      <h3>気分のグラフ</h3>
-      <canvas id="moodChart" width="400" height="180"></canvas>
-    </div>
-  </div>
+  
   <!-- Journal Section -->
   <div class="section" id="section-journal">
     <h2>日記</h2>
@@ -376,6 +357,31 @@
     <button id="journal-save-btn">保存</button>
     <div class="journal-list" id="journal-list"></div>
   </div>
+  <!-- Mood Section -->
+<div class="section" id="section-mood">
+  <h2>今日の気分</h2>
+  <label for="mood-select">気分を選んでください</label>
+  <select id="mood-select">
+    <option value="5">😍 嬉しい</option>
+    <option value="4">😊 いい感じ</option>
+    <option value="3">😐 普通</option>
+    <option value="2">😞 ちょっと落ち込み</option>
+    <option value="1">😡 怒り</option>
+  </select>
+  <div style="margin:15px 0;">
+    <span class="mood-emoji" id="mood-emoji">😍</span>
+  </div>
+  <!-- Add this below the mood selector -->
+  <label for="mood-photo">写真をアップロード</label>
+  <input type="file" id="mood-photo" accept="image/*">
+  <div id="mood-photo-preview" style="margin:10px 0;"></div>
+  <button id="mood-save-btn">保存</button>
+  <div id="mood-history" style="margin-top:20px;"></div>
+  <div class="mood-graph-section">
+    <h3>気分のグラフ</h3>
+    <canvas id="moodChart" width="400" height="180"></canvas>
+  </div>
+</div>
   <!-- みんなのノート Section -->
   <div class="section" id="section-public">
     <div class="public-note-title">みんなのノート</div>
@@ -612,6 +618,52 @@
       return (str||"").replace(/[<>"'&]/g, c=>({ '<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'})[c]);
     }
     renderPublic();
-  </script>
+  </script>:const moodPhotoInput = document.getElementById('mood-photo');
+const moodPhotoPreview = document.getElementById('mood-photo-preview');
+let moodPhotoDataUrl = null;
+
+// Show preview when a photo is chosen
+moodPhotoInput.onchange = function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      moodPhotoDataUrl = e.target.result;
+      moodPhotoPreview.innerHTML = `<img src="${moodPhotoDataUrl}" style="max-width:120px;max-height:120px;border-radius:12px;">`;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    moodPhotoDataUrl = null;
+    moodPhotoPreview.innerHTML = '';
+  }
+};
+
+// When saving mood, store photo if present
+moodSaveBtn.onclick = () => {
+  const val = moodSelect.value;
+  moods.push({
+    v: val,
+    date: new Date().toLocaleDateString("ja-JP"),
+    photo: moodPhotoDataUrl
+  });
+  localStorage.setItem('kokoro_moods', JSON.stringify(moods));
+  moodPhotoInput.value = "";
+  moodPhotoPreview.innerHTML = "";
+  moodPhotoDataUrl = null;
+  renderMoods();
+  drawMoodChart();
+};
+
+// Show photo in mood history, if present
+function renderMoods() {
+  moodHistory.innerHTML = '<b>最近の気分：</b><br>' +
+    moods.slice(-8).reverse().map(m => {
+      let html = `<span style="font-size:1.5em">${moodMap[m.v]}</span> (${m.date})`;
+      if (m.photo) {
+        html += `<br><img src="${m.photo}" style="max-width:90px;max-height:90px;border-radius:8px;margin:4px 0;">`;
+      }
+      return html;
+    }).join('<br>');
+}
 </body>
 </html>
